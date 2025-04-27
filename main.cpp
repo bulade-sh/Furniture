@@ -88,6 +88,10 @@ public:
         FurnitureIsExpen = static_cast<bool>(rand() % 2);
     }
 
+    virtual void Move() {
+        cout << "Moving generic furniture..." << endl;
+    }
+
     virtual ~Furniture()
     {
         if (cleaningMethod != nullptr) delete cleaningMethod;
@@ -144,6 +148,15 @@ public:
         SetCleaningStrategy(CreateCleaningStrategy(CleaningEnum::ShakeOff));
     }
 
+    void Move() override {
+        cout << "Chair: ";
+        if (hasBack) {
+            cout << "Grab the back to move";
+        } else {
+            cout << "Lift from the seat";
+        }
+    }
+
     void assemble() override
     {
         cout << "Chair assembly with " << numLegs << " legs."
@@ -187,6 +200,10 @@ public:
         cout << "Table disassembly" << endl;
     }
 
+    void Move() override {
+        cout << "Table: Lift from opposite sides";
+        }
+
     void PrintType() { cout << "Table"; }
 };
 
@@ -218,6 +235,14 @@ public:
         cout << "Sofa disassembly" << endl;
     }
 
+    void Move() override {
+        cout << "Sofa: ";
+        if (canConvertToBed) {
+            cout << "Convert to bed first";
+        } else {
+            cout << "Slide carefully";
+        }
+    }
     void PrintType() { cout << "Sofa"; }
 };
 
@@ -312,11 +337,23 @@ void cleanAll(Iterator<Furniture*> *it)
     }
 }
 
-
 int main() {
     setlocale(LC_ALL, "Russian");
 
     size_t N = 24;
+
+    Chair kitchenChair;
+    Table officeTable;
+    Sofa livingRoomSofa;
+
+    kitchenChair.Move();
+    cout << endl;
+
+    officeTable.Move();
+    cout << endl;
+
+    livingRoomSofa.Move();
+    cout << endl;
 
     ArrayClass<Furniture*> furnitureArray;
     for(size_t i=0; i<10; i++)
