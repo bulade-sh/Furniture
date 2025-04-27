@@ -5,73 +5,111 @@
 #include <stdlib.h>
 #include "PatternTemplates.h"
 
-
 using namespace std;
 
-enum class FurnitureColor : int
-{
+enum class FurnitureColor : int {
     Brown,
     Beige,
     Transparent,
     Unknown
 };
 
+// Реализация паттерна "Стратегия"
+enum class CleaningEnum : int {
+    ShakeOff,
+    Wipe,
+    Vacuum,
+    None
+};
+
+class CleaningStrategy {
+public:
+    virtual ~CleaningStrategy() {}
+    virtual void clean() = 0;
+};
+
+class ShakeOffStrategy : public CleaningStrategy {
+    void clean() override { cout << "Shake off the dust..."; }
+};
+
+class WipeStrategy : public CleaningStrategy {
+    void clean() override { cout << "Wipe with a cloth..."; }
+};
+
+class VacuumStrategy : public CleaningStrategy {
+    void clean() override { cout << "Vacuum..."; }
+};
+
+// Фабрика стратегий очистки
+CleaningStrategy* CreateCleaningStrategy(CleaningEnum method) {
+    switch(method) {
+        case CleaningEnum::ShakeOff: return new ShakeOffStrategy;
+        case CleaningEnum::Wipe: return new WipeStrategy;
+        case CleaningEnum::Vacuum: return new VacuumStrategy;
+        default: return nullptr;
+    }
+}
+
 class Furniture {
 private:
     string material;
     FurnitureColor color;
     int weight;
-
-protected:
-    bool FurnitureIsExpen; // "дорогая мебель?"
+    CleaningStrategy* cleaningMethod;
+    bool FurnitureIsExpen;
 
 public:
     Furniture(string mater, FurnitureColor clr, int wgt)
-        : material(mater), color(clr), weight(wgt)
-        {
-            FurnitureIsExpen = static_cast<bool>(rand()%2);
+        : material(mater), color(clr), weight(wgt),
+          cleaningMethod(nullptr), FurnitureIsExpen(false) {
+        FurnitureIsExpen = static_cast<bool>(rand() % 2);
+    }
+
+    virtual ~Furniture() {
+        if (cleaningMethod != nullptr) delete cleaningMethod;
+    }
+
+    virtual void assemble() = 0;
+    virtual void disassemble() = 0;
+    virtual void punch() { cout << "PUNCH furniture" << endl; }
+
+    void clean() {
+        if (cleaningMethod != nullptr) {
+            cleaningMethod->clean();
+            cout << endl;
+        } else {
+            cout << "No cleaning method set!" << endl;
         }
-
-    virtual void assemble() {
-        cout << "Furniture assembled" << endl;
-    }
-    virtual void disassemble() {
-        cout << "Furniture disassembled" << endl;
     }
 
-    virtual void clean() = 0;
-
-    virtual void punch() {
-        cout << "PUNCH furniture" << endl;
+    void SetCleaningStrategy(CleaningStrategy* strategy) {
+        if (cleaningMethod != nullptr) delete cleaningMethod;
+        cleaningMethod = strategy;
     }
+
     FurnitureColor GetColor() const { return color; }
-    virtual ~Furniture() {}
     bool IsExpen() const { return FurnitureIsExpen; }
 };
 
 class Chair : public Furniture {
 private:
-    int numLegs; // ножки
-    bool hasBack; // имеется спинка
+    int numLegs;
+    bool hasBack;
 
 public:
-    void assemble() override {
-    cout << "Chair assembly with " << numLegs << " legs."
-          << (hasBack ? " Has back" : "") << endl;
+    Chair() : Furniture("Wood", FurnitureColor::Brown, 5), numLegs(4), hasBack(true) {
+        SetCleaningStrategy(CreateCleaningStrategy(CleaningEnum::ShakeOff));
     }
-    void clean() override;
-    Chair();
-    ~Chair() {}
+
+    void assemble() override {
+        cout << "Chair assembly with " << numLegs << " legs."
+             << (hasBack ? " Has back" : "") << endl;
+    }
+
+    void disassemble() override {
+        cout << "Chair disassembly" << endl;
+    }
 };
-
-Chair::Chair() : Furniture("Wood", FurnitureColor::Brown, 5), numLegs(4), hasBack(true)
-{
-}
-
-void Chair::clean()
-{
-    cout << "Clean a chair..." << endl;
-}
 
 class Table : public Furniture {
 private:
@@ -79,49 +117,42 @@ private:
     int numSeats;
 
 public:
-    void assemble() override {
-        cout << "Table assembly with " << shape << " shape and with "
-                  << numSeats << " num of seats." << endl;
+    Table() : Furniture("Glass", FurnitureColor::Transparent, 11),
+              shape("round"), numSeats(5) {
+        SetCleaningStrategy(CreateCleaningStrategy(CleaningEnum::Wipe));
     }
 
-    void clean();
-    Table();
-    ~Table() {}
+    void assemble() override {
+        cout << "Table assembly with " << shape << " shape and "
+             << numSeats << " seats." << endl;
+    }
+
+    void disassemble() override {
+        cout << "Table disassembly" << endl;
+    }
 };
-
-Table::Table() : Furniture("Table", FurnitureColor::Transparent, 11), shape("round"), numSeats(5)
-{
-}
-
-void Table::clean()
-{
-    cout << "Wipe a table..." << endl;
-}
 
 class Sofa : public Furniture {
 private:
     int numSeats;
-    bool canConvertToBed; //может ли разложиться в спальное место(кровать)
+    bool canConvertToBed;
 
 public:
-    void assemble() override {
-        cout << "Sofa assembly with  " << numSeats << " seats."
-                  << (canConvertToBed ? " Can convert to bed?. " : "") << endl;
+    Sofa() : Furniture("Fabric", FurnitureColor::Beige, 25),
+             numSeats(4), canConvertToBed(true) {
+        SetCleaningStrategy(CreateCleaningStrategy(CleaningEnum::Vacuum));
     }
 
-    ~Sofa() {}
-    Sofa();
-    void clean() override;
+    void assemble() override {
+        cout << "Sofa assembly with " << numSeats << " seats."
+             << (canConvertToBed ? " Can convert to bed." : "") << endl;
+    }
+
+    void disassemble() override {
+        cout << "Sofa disassembly" << endl;
+    }
 };
-Sofa::Sofa() : Furniture("Fabric", FurnitureColor::Beige, 25), numSeats(4), canConvertToBed(true)
-{
-}
 
-
-void Sofa::clean()
-{
-    cout << "Vacuum a sofa..." << endl;
-}
 
 enum class FurnitureType : int
 {
@@ -219,19 +250,20 @@ int main() {
 
     size_t N = 24;
 
-    // 3. Массив мебели
     ArrayClass<Furniture*> furnitureArray;
     for(size_t i=0; i<10; i++)
     {
         int furniture_num = rand()%3+1;
         FurnitureType furniture_type = static_cast<FurnitureType>(furniture_num);
         Furniture *newFurniture = CreateFurniture(furniture_type);
+
+        newFurniture->SetCleaningStrategy(CreateCleaningStrategy(CleaningEnum::Wipe));
+
         furnitureArray.Add(newFurniture);
     }
 
-    cout << "Array of furniture: " << furnitureArray.Size() << endl;
+    //cout << "Array of furniture: " << furnitureArray.Size() << endl;
 
-    // Связанный список мебели
 
     list<Furniture*> furnitureVector;
     for(size_t i=0; i<N; i++)
@@ -242,14 +274,14 @@ int main() {
         furnitureVector.push_back(newFurniture);
     }
 
-    cout << "Size list: " << furnitureVector.size() << endl;
+    //cout << "Size list: " << furnitureVector.size() << endl;
 
     // Обход в простом цикле
     cout << endl << "Cleaning all in a simple loop:" << endl;
     for(size_t i=0; i<furnitureArray.Size(); i++)
     {
         Furniture *currentFurniture = furnitureArray[i];
-        currentFurniture->assemble();
+        currentFurniture->clean();
     }
 
     cout << endl << "Cleaning all expensive using iterator:" << endl;
@@ -271,7 +303,7 @@ int main() {
     delete expenBrownIt;
 
     // Демонстрация работы адаптера
-    cout << endl << "Eating all expensive brown using adapted iterator (another container):" << endl;
+    cout << endl << "Cleaning all expensive brown using adapted iterator:" << endl;
     Iterator<Furniture*> *adaptedIt = new ConstIteratorAdapter<std::list<Furniture*>, Furniture*>(&furnitureVector);
     Iterator<Furniture*> *adaptedBrownIt = new FurnitureExpenDecorator(new FurnitureColorDecorator(adaptedIt, FurnitureColor::Brown), true);
     cleanAll(adaptedBrownIt);
